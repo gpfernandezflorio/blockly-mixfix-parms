@@ -27,8 +27,7 @@ Main.Blockly.name_edit = function(img) {
       if (cierraP+1 < nuevo_nombre.length) {
         textos.push(nuevo_nombre.substring(cierraP+1, nuevo_nombre.length));
       }
-      field.setValue(Blockly.Procedures.rename(bloque, field, nuevo_nombre));
-      bloque.compose(textos, params);
+      bloque.compose(nuevo_nombre, textos, params);
     }
   }
 };
@@ -36,7 +35,7 @@ Main.Blockly.name_edit = function(img) {
 Main.Blockly.manito = function(img) {
   var bloque = img.sourceBlock_;
   var type = bloque.callType_;
-  var name = bloque.getFieldValue('NAME');
+  var name = bloque.nombreReal;
   var xmlName = Blockly.utils.xml.createElement('mutation');
   xmlName.setAttribute('name', name);
 
@@ -64,10 +63,11 @@ Main.Blockly.agregarBloques = function() {
       var nameField = new Blockly.FieldTextInput(initName,
           Blockly.Procedures.rename);
       nameField.setSpellcheck(false);*/
-      var nameField = new Blockly.FieldLabelSerializable('Hacer algo');
-      this.appendDummyInput()
+      var nameField = new Blockly.FieldLabel('Hacer algo');
+      this.appendDummyInput('TITLE_INPUT')
           //.appendField(Blockly.Msg['PROCEDURES_DEFNORETURN_TITLE'])
-          .appendField(nameField, 'NAME')
+          .appendField(nameField)
+      this.appendDummyInput('EDIT_INPUT')
           .appendField(new Blockly.FieldImage('./img/edit.png',16,16,undefined,function(){Main.Blockly.name_edit(this);}))
           .appendField(new Blockly.FieldImage('./img/handopen.cur',16,16,undefined,function(){Main.Blockly.manito(this);}));
       //this.setMutator(new Blockly.Mutator(['procedures_mutatorarg']));
@@ -80,11 +80,68 @@ Main.Blockly.agregarBloques = function() {
       this.setStyle('procedure_blocks');
       this.setTooltip(Blockly.Msg['PROCEDURES_DEFNORETURN_TOOLTIP']);
       this.setHelpUrl(Blockly.Msg['PROCEDURES_DEFNORETURN_HELPURL']);
+      this.setInputsInline(true);
+      this.nombreReal = 'Hacer algo';
       this.textos_ = ['Hacer algo'];
       this.arguments_ = [];
       this.argumentVarModels_ = [];
       this.setStatements_(true);
       this.statementConnection_ = null;
+      this.updateShape_();
+    },
+    updateShape_: function() {
+      let textos = this.textos_;
+      if (textos === undefined) {
+        textos = (this.type == 'procedures_defnoreturn' ? 'Hacer algo' : 'algo');
+      }
+      if (typeof textos == 'string') { textos = [textos]; }
+      if (this.getInput('TITLE_INPUT')) {
+        this.removeInput('TITLE_INPUT');
+      }
+      let j = 0;
+      while(this.getInput("FANTASMA"+j)) {
+        this.removeInput("FANTASMA"+j);
+        j++;
+      }
+      if (Main.modo == 'FANTASMAS') {
+        let ultimoInput = 'EDIT_INPUT';
+        for (let i=this.arguments_.length-1; i >= 0; i--) {
+          this.appendValueInput("FANTASMA"+i)
+            .appendField(new Blockly.FieldLabel(textos[i]))
+            .setCheck('FANTASMA');
+          this.moveInputBefore("FANTASMA"+i, ultimoInput);
+          ultimoInput = "FANTASMA"+i;
+        }
+        if (textos.length > this.arguments_.length) {
+          this.appendDummyInput('TITLE_INPUT')
+            .appendField(new Blockly.FieldLabel(textos[this.arguments_.length]));
+          this.moveInputBefore('TITLE_INPUT', 'EDIT_INPUT');
+        }
+        return;
+      }
+      let title = this.appendDummyInput('TITLE_INPUT');
+      if (Main.modo == 'ÍCONOS') {
+        for (let i=0; i<textos.length; i++) {
+          title.appendField(new Blockly.FieldLabel(textos[i]));
+          if (this.arguments_.length > i) {
+            title.appendField(new Blockly.FieldImage('https://www.gstatic.com/codesite/ph/images/star_on.gif', 16,16));
+          }
+        }
+      } else if (Main.modo == 'SUBRAYADO') {
+        title.appendField(new Blockly.FieldLabel(textos.join(' _______ ')));
+      } else if (Main.modo == 'EDITOR') {
+        for (let i=0; i<textos.length; i++) {
+          title.appendField(new Blockly.FieldLabel(textos[i]));
+          if (this.arguments_.length > i) {
+            let arg = new Blockly.FieldTextInput(this.arguments_[i]);
+            arg.EDITABLE = false;
+            title.appendField(arg);
+          }
+        }
+      } else { // PARENTESIS
+        title.appendField(new Blockly.FieldLabel(this.nombreReal));
+      }
+      this.moveInputBefore('TITLE_INPUT', 'EDIT_INPUT');
     },
     /**
      * Add or remove the statement block from this function definition.
@@ -127,6 +184,7 @@ Main.Blockly.agregarBloques = function() {
       } finally {
         Blockly.Events.enable();
       }
+      this.updateShape_();
     },
     /**
      * Create XML to represent the argument inputs.
@@ -137,8 +195,15 @@ Main.Blockly.agregarBloques = function() {
      */
     mutationToDom: function(opt_paramIds) {
       var container = Blockly.utils.xml.createElement('mutation');
-      if (opt_paramIds) {
-        container.setAttribute('name', this.getFieldValue('NAME'));
+      //if (opt_paramIds) {
+        container.setAttribute('name', this.nombreReal);
+      //}
+      let textos = this.textos_;
+      if (textos == undefined) { textos = []; }
+      for (var i = 0; i < textos.length; i++) {
+        var texto = Blockly.utils.xml.createElement('tt');
+        texto.setAttribute('text', textos[i]);
+        container.appendChild(texto);
       }
       for (var i = 0; i < this.argumentVarModels_.length; i++) {
         var parameter = Blockly.utils.xml.createElement('arg');
@@ -163,6 +228,7 @@ Main.Blockly.agregarBloques = function() {
      * @this {Blockly.Block}
      */
     domToMutation: function(xmlElement) {
+      this.nombreReal = xmlElement.getAttribute('name');
       this.textos_ = [];
       this.arguments_ = [];
       this.argumentVarModels_ = [];
@@ -178,6 +244,8 @@ Main.Blockly.agregarBloques = function() {
           } else {
             console.log('Failed to create a variable with name ' + varName + ', ignoring.');
           }
+        } else if (childNode.nodeName.toLowerCase() == 'tt') {
+          this.textos_.push(childNode.getAttribute('text'));
         }
       }
       this.updateParams_();
@@ -244,8 +312,9 @@ Main.Blockly.agregarBloques = function() {
      * @param {!Blockly.Block} containerBlock Root block in mutator.
      * @this {Blockly.Block}
      */
-    compose: function(textos, params) {
+    compose: function(nombreReal, textos, params) {
       // Parameter list.
+      this.nombreReal = Blockly.Procedures.rename(this, nombreReal);
       this.textos_ = textos;
       this.arguments_ = [];
       this.paramIds_ = [];
@@ -299,7 +368,7 @@ Main.Blockly.agregarBloques = function() {
      * @this {Blockly.Block}
      */
     getProcedureDef: function() {
-      return [this.getFieldValue('NAME'), this.arguments_, false];
+      return [this.nombreReal, this.arguments_, false];
     },
     /**
      * Return all variables referenced by this block.
@@ -386,8 +455,8 @@ Main.Blockly.agregarBloques = function() {
         var blocks = this.mutator.workspace_.getAllBlocks(false);
         for (var i = 0, block; (block = blocks[i]); i++) {
           if (block.type == 'procedures_mutatorarg' &&
-              Blockly.Names.equals(oldName, block.getFieldValue('NAME'))) {
-            block.setFieldValue(newName, 'NAME');
+              Blockly.Names.equals(oldName, block.nombreReal)) {
+            block.nombreReal = newName;
           }
         }
       }
@@ -403,7 +472,7 @@ Main.Blockly.agregarBloques = function() {
       }
       // Add option to create caller.
       var option = {enabled: true};
-      var name = this.getFieldValue('NAME');
+      var name = this.nombreReal;
       option.text = Blockly.Msg['PROCEDURES_CREATE_DO'].replace('%1', name);
       var xmlMutation = Blockly.utils.xml.createElement('mutation');
       xmlMutation.setAttribute('name', name);
@@ -449,10 +518,11 @@ Main.Blockly.agregarBloques = function() {
       var nameField = new Blockly.FieldTextInput(initName,
           Blockly.Procedures.rename);
       nameField.setSpellcheck(false);*/
-      var nameField = new Blockly.FieldLabelSerializable('algo');
-      this.appendDummyInput()
-          //.appendField(Blockly.Msg['PROCEDURES_DEFRETURN_TITLE'])
-          .appendField(nameField, 'NAME')
+      var nameField = new Blockly.FieldLabel('algo');
+      this.appendDummyInput('TITLE_INPUT')
+          //.appendField(Blockly.Msg['PROCEDURES_DEFNORETURN_TITLE'])
+          .appendField(nameField)
+      this.appendDummyInput('EDIT_INPUT')
           .appendField(new Blockly.FieldImage('./img/edit.png',16,16,undefined,function(){Main.Blockly.name_edit(this);}))
           .appendField(new Blockly.FieldImage('./img/handopen.cur',16,16,undefined,function(){Main.Blockly.manito(this);}));
       this.appendValueInput('RETURN')
@@ -468,11 +538,16 @@ Main.Blockly.agregarBloques = function() {
       this.setStyle('procedure_blocks');
       this.setTooltip(Blockly.Msg['PROCEDURES_DEFRETURN_TOOLTIP']);
       this.setHelpUrl(Blockly.Msg['PROCEDURES_DEFRETURN_HELPURL']);
+      this.setInputsInline(true);
+      this.nombreReal = 'algo';
+      this.textos_ = ['algo'];
       this.arguments_ = [];
       this.argumentVarModels_ = [];
       this.setStatements_(true);
       this.statementConnection_ = null;
+      this.updateShape_();
     },
+    updateShape_: Blockly.Blocks['procedures_defnoreturn'].updateShape_,
     setStatements_: Blockly.Blocks['procedures_defnoreturn'].setStatements_,
     updateParams_: Blockly.Blocks['procedures_defnoreturn'].updateParams_,
     mutationToDom: Blockly.Blocks['procedures_defnoreturn'].mutationToDom,
@@ -488,7 +563,7 @@ Main.Blockly.agregarBloques = function() {
      * @this {Blockly.Block}
      */
     getProcedureDef: function() {
-      return [this.getFieldValue('NAME'), this.arguments_, true];
+      return [this.nombreReal, this.arguments_, true];
     },
     getVars: Blockly.Blocks['procedures_defnoreturn'].getVars,
     getVarModels: Blockly.Blocks['procedures_defnoreturn'].getVarModels,
@@ -647,6 +722,7 @@ Main.Blockly.agregarBloques = function() {
      */
     updateShape_: function() {
       let textos = Blockly.Procedures.getDefinition(this.nombreReal, this.workspace).textos_;
+      if (typeof textos == 'string') { textos = [textos]; }
       for (var i = 0; i < this.arguments_.length; i++) {
         var field = this.getField('ARGNAME' + i);
         if (field) {
@@ -923,13 +999,13 @@ Main.Blockly.agregarBloques = function() {
         Blockly.Blocks['procedures_callnoreturn'].customContextMenu,
     defType_: 'procedures_defreturn'
   };
-  Blockly.Procedures.rename = function(bloque, field, name) {
+  Blockly.Procedures.rename = function(bloque, name) {
     // Strip leading and trailing whitespace.  Beyond this, all names are legal.
     name = name.trim();
 
     var legalName = Blockly.Procedures.findLegalName(name,
         /** @type {!Blockly.Block} */ (bloque));
-    var oldName = field.getValue();
+    var oldName = bloque.nombreReal;
     if (oldName != name && oldName != legalName) {
       // Rename any callers.
       var blocks = bloque.workspace.getAllBlocks(false);

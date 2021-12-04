@@ -1,6 +1,10 @@
 Main = {
+  INIT : '<xml xmlns="https://developers.google.com/blockly/xml"><variables><variable id="z@`}5,[k,PT--`Zfay^q">cantidad</variable><variable id="(VPr~,plYGmChx)v#)~z">color</variable></variables><block type="procedures_defnoreturn" id="xCcI~{J=Y6XLekmw^e9e" x="76" y="101"><mutation name="Poner (cantidad) bolitas (color) al norte"><tt text="Poner "></tt><tt text=" bolitas "></tt><tt text=" al norte "></tt><arg name="cantidad" varid="z@`}5,[k,PT--`Zfay^q"></arg><arg name="color" varid="(VPr~,plYGmChx)v#)~z"></arg></mutation></block></xml>',
+  DEBUG : false,
+  debug : function() { if (Main.DEBUG) { debugger; } },
   blockly : undefined,
-  idioma : 'es'
+  idioma : 'es',
+  modo: 'PARENTESIS' // PARENTESIS ÍCONOS FANTASMAS SUBRAYADO EDITOR
 };
 
 // Inicializa todo lo necesario antes de que se termine de cargar la página
@@ -21,6 +25,7 @@ Main.crearBlockly = function() {
     Main.blockly.dispose();
   }
   Main.blockly = Blockly.inject('blockly', {toolbox: Main.toolbox});
+  Blockly.Xml.domToWorkspace(Blockly.Xml.textToDom(Main.INIT), Main.blockly);
 };
 
 Main.redimensionar = function() {
@@ -31,6 +36,17 @@ Main.redimensionar = function() {
     Blockly.hideChaff(true);
     Blockly.svgResize(Main.blockly);
     Blockly.resizeSvgContents(Main.blockly);
+  }
+};
+
+Main.cambiarModoVis = function() {
+  Main.modo = document.getElementById('modo_vis').value;
+  if (Main.blockly) {
+    for (let b of Main.blockly.getAllBlocks()) {
+      if (b.updateShape_) {
+        b.updateShape_();
+      }
+    }
   }
 };
 

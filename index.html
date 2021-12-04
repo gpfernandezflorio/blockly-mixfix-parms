@@ -11,7 +11,16 @@
     <link rel="stylesheet" href="style.css" media="screen,projection">
   </head>
   <body>
-    <div id="barra_navagacion"></div>
+    <div id="barra_navagacion">
+      <span class="texto">Visualización:</span>
+      <select id="modo_vis" onchange="Main.cambiarModoVis();">
+        <option value="PARENTESIS" selected>Paréntesis</option>
+        <option value="FANTASMAS">Bloques fantasma</option>
+        <option value="SUBRAYADO">Subrayado</option>
+        <option value="ÍCONOS">Íconos</option>
+        <option value="EDITOR">Recuadro</option>
+      </select>
+    </div>
     <div id="blockly"></div>
   </body>
 </html>

@@ -8,8 +8,16 @@ body {
   background-color: #aad;
 }
 
-  #blockly {
+#modo_vis {
+  margin: 5px;
+}
+
+#blockly {
   width: 100%;
+}
+
+.texto {
+  margin: 5px;
 }
 
 .boton {
