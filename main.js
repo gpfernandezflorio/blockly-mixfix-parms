@@ -4,7 +4,8 @@ Main = {
   debug : function() { if (Main.DEBUG) { debugger; } },
   blockly : undefined,
   idioma : 'es',
-  modo: 'PARENTESIS' // PARENTESIS ÍCONOS FANTASMAS SUBRAYADO EDITOR
+  modoVis: 'PARENTESIS', // PARENTESIS ÍCONOS FANTASMAS SUBRAYADO EDITOR
+  modoDef: 'PARENTESIS' // PARENTESIS MUTADOR
 };
 
 // Inicializa todo lo necesario antes de que se termine de cargar la página
@@ -40,7 +41,18 @@ Main.redimensionar = function() {
 };
 
 Main.cambiarModoVis = function() {
-  Main.modo = document.getElementById('modo_vis').value;
+  Main.modoVis = document.getElementById('modo_vis').value;
+  if (Main.blockly) {
+    for (let b of Main.blockly.getAllBlocks()) {
+      if (b.updateShape_) {
+        b.updateShape_();
+      }
+    }
+  }
+};
+
+Main.cambiarModoDef = function() {
+  Main.modoDef = document.getElementById('modo_def').value;
   if (Main.blockly) {
     for (let b of Main.blockly.getAllBlocks()) {
       if (b.updateShape_) {

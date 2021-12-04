@@ -20,6 +20,11 @@
         <option value="ÍCONOS">Íconos</option>
         <option value="EDITOR">Recuadro</option>
       </select>
+      <span class="texto">Definición:</span>
+      <select id="modo_def" onchange="Main.cambiarModoDef();">
+        <option value="PARENTESIS" selected>Palabras entre paréntesis</option>
+        <option value="MUTADOR">Mutador nativo</option>
+      </select>
     </div>
     <div id="blockly"></div>
   </body>
